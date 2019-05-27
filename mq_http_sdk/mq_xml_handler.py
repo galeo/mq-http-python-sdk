@@ -4,12 +4,12 @@ import sys
 import xml.dom.minidom
 import string
 import types
-from mq_exception import *
-from mq_request import *
+from .mq_exception import *
+from .mq_request import *
 
 try:
     import json
-except ImportError, e:
+except ImportError:
     import simplejson as json
 
 XMLNS = "http://mq.aliyuncs.com/doc/v1/"
@@ -46,7 +46,7 @@ class EncoderBase:
         if data_dic:
             for k, v in data_dic.items():
                 keyNode = doc.createElement(k)
-                if type(v) is types.DictType:
+                if isinstance(v, dict):
                     for subkey, subv in v.items():
                         subNode = doc.createElement(subkey)
                         subNode.appendChild(doc.createTextNode(subv))
@@ -65,7 +65,7 @@ class TopicMessageEncoder:
     def encode(req):
         message = {}
         # xml only support unicode when contains Chinese
-        msgbody = req.message_body.decode('utf-8') if isinstance(req.message_body, str) else req.message_body
+        msgbody = req.message_body if isinstance(req.message_body, str) else req.message_body.decode('utf-8')
         EncoderBase.insert_if_valid("MessageBody", msgbody, "", message)
         EncoderBase.insert_if_valid("MessageTag", req.message_tag, "", message)
         return EncoderBase.dic_to_xml("Message", message)
@@ -86,13 +86,13 @@ class DecoderBase:
 
         try:
             dom = xml.dom.minidom.parseString(xml_data)
-        except Exception, e:
+        except Exception:
             raise MQClientNetworkException("RespDataDamaged", xml_data)
 
         nodelist = dom.getElementsByTagName(tag_name)
         if not nodelist:
             raise MQClientNetworkException("RespDataDamaged",
-                                            "No element with tag name '%s'.\nData:%s" % (tag_name, xml_data))
+                                           "No element with tag name '%s'.\nData:%s" % (tag_name, xml_data))
 
         return nodelist[0].childNodes
 
@@ -105,7 +105,7 @@ class DecoderBase:
                         data_dic[node.nodeName] = node.firstChild.data
                     else:
                         data_dic[node.nodeName] = ""
-        except MQClientNetworkException, e:
+        except MQClientNetworkException as e:
             raise MQClientNetworkException(e.type, e.message, req_id)
 
     @staticmethod
@@ -120,7 +120,7 @@ class DecoderBase:
                     if property.nodeName != "#text" and property.childNodes != []:
                         data_dic[property.nodeName] = property.firstChild.data
                 data_listofdic.append(data_dic)
-        except MQClientNetworkException, e:
+        except MQClientNetworkException as e:
             raise MQClientNetworkException(e.type, e.message, req_id)
 
 
@@ -134,18 +134,18 @@ class ConsumeMessageDecoder(DecoderBase):
             for data_dic in data_listofdic:
                 msg = ConsumeMessageResponseEntry()
                 msg.message_body = data_dic["MessageBody"]
-                msg.consumed_times = string.atoi(data_dic["ConsumedTimes"])
-                msg.publish_time = string.atoi(data_dic["PublishTime"])
-                msg.first_consume_time = string.atoi(data_dic["FirstConsumeTime"])
+                msg.consumed_times = int(data_dic["ConsumedTimes"])
+                msg.publish_time = int(data_dic["PublishTime"])
+                msg.first_consume_time = int(data_dic["FirstConsumeTime"])
                 msg.message_id = data_dic["MessageId"]
                 if "MessageBodyMD5" in data_dic:
                     msg.message_body_md5 = data_dic["MessageBodyMD5"]
-                msg.next_consume_time = string.atoi(data_dic["NextConsumeTime"])
+                msg.next_consume_time = int(data_dic["NextConsumeTime"])
                 msg.receipt_handle = data_dic["ReceiptHandle"]
                 if "MessageTag" in data_dic:
                     msg.message_tag = data_dic["MessageTag"]
                 message_list.append(msg)
-        except Exception, e:
+        except Exception as e:
             raise MQClientNetworkException("RespDataDamaged", xml_data, req_id)
         return message_list
 
@@ -155,7 +155,7 @@ class AckMessageDecoder(DecoderBase):
     def decodeError(xml_data, req_id=None):
         try:
             return ErrorDecoder.decodeError(xml_data, req_id)
-        except Exception, e:
+        except Exception as e:
             pass
 
         data_listofdic = []

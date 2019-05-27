@@ -5,12 +5,12 @@ import time
 import hashlib
 import hmac
 import platform
-import pkg_info
-from mq_xml_handler import *
-from mq_tool import *
-from mq_http import *
-from mq_consumer import MQConsumer
-from mq_producer import MQProducer
+from . import pkg_info
+from .mq_xml_handler import *
+from .mq_tool import *
+from .mq_http import *
+from .mq_consumer import MQConsumer
+from .mq_producer import MQProducer
 
 URI_SEC_MESSAGE = "messages"
 URI_SEC_TOPIC = "topics"
@@ -206,7 +206,7 @@ class MQClient:
         canonicalized_resource = resource
         canonicalized_mq_headers = ""
         if len(headers) > 0:
-            x_header_list = headers.keys()
+            x_header_list = list(headers.keys())
             x_header_list.sort()
             for k in x_header_list:
                 if k.startswith('x-mq-'):
@@ -214,9 +214,10 @@ class MQClient:
         string_to_sign = "%s\n%s\n%s\n%s\n%s%s" % (
             method, content_md5, content_type, date, canonicalized_mq_headers, canonicalized_resource)
         # hmac only support str in python2.7
-        tmp_key = self.access_key.encode('utf-8') if isinstance(self.access_key, unicode) else self.access_key
-        h = hmac.new(tmp_key, string_to_sign, hashlib.sha1)
-        signature = base64.b64encode(h.digest())
+        tmp_key = (self.access_key.encode('utf-8') if isinstance(self.access_key, str)
+                   else self.access_key)
+        h = hmac.new(tmp_key, string_to_sign.encode('utf-8'), hashlib.sha1)
+        signature = base64.b64encode(h.digest()).decode()
         signature = "MQ " + self.access_id + ":" + signature
         return signature
 

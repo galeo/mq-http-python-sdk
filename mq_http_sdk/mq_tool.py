@@ -3,7 +3,7 @@
 import os
 import logging
 import logging.handlers
-from mq_exception import *
+from .mq_exception import *
 
 METHODS = ["PUT", "POST", "GET", "DELETE"]
 
@@ -53,13 +53,13 @@ class ValidatorBase:
 
     @staticmethod
     def is_str(item, param_name=None):
-        if not isinstance(item, basestring):
+        if not isinstance(item, str):
             if param_name is None:
                 raise MQClientParameterException("TypeInvalid",
-                                                  "Bad type: '%s', '%s' expect basestring." % (type(item), item))
+                                                 "Bad type: '%s', '%s' expect basestring." % (type(item), item))
             else:
                 raise MQClientParameterException("TypeInvalid",
-                                                  "Param '%s' in bad type: '%s', '%s' expect basestring." % (
+                                                 "Param '%s' in bad type: '%s', '%s' expect basestring." % (
                                                       param_name, type(item), item))
 
     @staticmethod

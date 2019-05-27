@@ -1,10 +1,10 @@
 # coding=utf-8
 
-from mq_request import *
+from .mq_request import *
 
 try:
     import json
-except ImportError, e:
+except ImportError:
     import simplejson as json
 
 
@@ -43,9 +43,9 @@ class MQProducer:
 
     def debuginfo(self, resp):
         if self.debug:
-            print "===================DEBUG INFO==================="
-            print "RequestId: %s" % resp.header["x-mq-request-id"]
-            print "================================================"
+            print("===================DEBUG INFO===================")
+            print("RequestId: %s" % resp.header["x-mq-request-id"])
+            print("================================================")
 
     def __publish_resp2msg__(self, resp):
         msg = TopicMessage()
